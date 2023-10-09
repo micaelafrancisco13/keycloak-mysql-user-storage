@@ -24,6 +24,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
+import java.sql.Timestamp;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -41,15 +42,12 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
     public UserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, UserEntity entity) {
         super(session, realm, model);
         this.entity = entity;
-        keycloakId = StorageId.keycloakId(model, entity.getId());
+        keycloakId = StorageId.keycloakId(model, String.valueOf(entity.getId()));
     }
 
-    public String getPassword() {
-        return entity.getPassword();
-    }
-
-    public void setPassword(String password) {
-        entity.setPassword(password);
+    @Override
+    public String getId() {
+        return keycloakId;
     }
 
     @Override
@@ -60,12 +58,6 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
     @Override
     public void setUsername(String username) {
         entity.setUsername(username);
-
-    }
-
-    @Override
-    public void setEmail(String email) {
-        entity.setEmail(email);
     }
 
     @Override
@@ -74,8 +66,34 @@ public class UserAdapter extends AbstractUserAdapterFederatedStorage {
     }
 
     @Override
-    public String getId() {
-        return keycloakId;
+    public void setEmail(String email) {
+        entity.setEmail(email);
+    }
+
+    public String getPassword() {
+        return entity.getPassword();
+    }
+
+    public void setPassword(String password) {
+        entity.setPassword(password);
+    }
+
+    public String getStatus() {
+        return entity.getStatus();
+    }
+
+    public void setStatus(String status) {
+        entity.setStatus(status);
+    }
+
+    @Override
+    public Long getCreatedTimestamp() {
+        return entity.getCreatedAt().getTime();
+    }
+
+    @Override
+    public void setCreatedTimestamp(Long timestamp) {
+        entity.setCreatedAt(new Timestamp(timestamp));
     }
 
     @Override

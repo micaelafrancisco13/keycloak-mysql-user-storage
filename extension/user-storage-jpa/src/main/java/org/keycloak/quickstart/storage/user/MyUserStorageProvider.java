@@ -24,12 +24,7 @@ import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.credential.CredentialInput;
 import org.keycloak.credential.CredentialInputUpdater;
 import org.keycloak.credential.CredentialInputValidator;
-import org.keycloak.models.GroupModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
-import org.keycloak.models.UserCredentialModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.models.cache.CachedUserModel;
 import org.keycloak.models.cache.OnUserCache;
 import org.keycloak.models.credential.PasswordCredentialModel;
@@ -39,11 +34,9 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -129,10 +122,15 @@ public class MyUserStorageProvider implements UserStorageProvider,
     @Override
     public UserModel addUser(RealmModel realm, String username) {
         UserEntity entity = new UserEntity();
-        entity.setId(UUID.randomUUID().toString());
+
         entity.setUsername(username);
+        entity.setEmail(username);
+        entity.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+
         em.persist(entity);
+
         logger.info("added user: " + username);
+
         return new UserAdapter(session, realm, model, entity);
     }
 
@@ -227,17 +225,36 @@ public class MyUserStorageProvider implements UserStorageProvider,
 
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
+        logger.info("searchForUser");
+
         String search = params.get(UserModel.SEARCH);
-        TypedQuery<UserEntity> query = em.createNamedQuery("searchForUser", UserEntity.class);
-        query.setParameter("search", "%" + search.toLowerCase() + "%");
-        if (firstResult != null) {
-            query.setFirstResult(firstResult);
+
+        if (Objects.equals(search, "*")) {
+            List<UserEntity> query = em.createNamedQuery("getAllUsers", UserEntity.class)
+                    .getResultList();
+
+            int fromIndex = firstResult;
+            int toIndex = Math.min(query.size(), firstResult + maxResults);
+
+            List<UserEntity> paginatedResults = query.subList(fromIndex, toIndex);
+
+            return paginatedResults.stream()
+                    .map(entity -> new UserAdapter(session, realm, model, entity));
         }
-        if (maxResults != null) {
-            query.setMaxResults(maxResults);
+        else {
+            TypedQuery<UserEntity> query = em.createNamedQuery("searchForUser", UserEntity.class);
+            query.setParameter("search", "%" + search.toLowerCase() + "%");
+
+            if (firstResult != null) {
+                query.setFirstResult(firstResult);
+            }
+            if (maxResults != null) {
+                query.setMaxResults(maxResults);
+            }
+            return query.getResultStream().map(entity -> new UserAdapter(session, realm, model, entity));
         }
-        return query.getResultStream().map(entity -> new UserAdapter(session, realm, model, entity));
     }
+
 
     @Override
     public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults) {

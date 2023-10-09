@@ -17,10 +17,10 @@
 package org.keycloak.quickstart.storage.user;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.NamedQueries;
-import jakarta.persistence.NamedQuery;
+import jakarta.persistence.*;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -35,22 +35,31 @@ import jakarta.persistence.NamedQuery;
                 "( lower(u.username) like :search or u.email like :search ) order by u.username"),
 })
 @Entity
+@Table(name = "Users_Sample")
 public class UserEntity {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "userId")
+    private Long id;
 
-
+    @Column(name = "userName")
     private String username;
+
     private String email;
+
+    @Column(name = "bCryptPassword")
     private String password;
+
+    private String status;
+
+    @Column(name = "phoneMobile")
     private String phone;
 
-    public String getId() {
-        return id;
-    }
+    @Column(name = "ts")
+    private Timestamp createdAt;
 
-    public void setId(String id) {
-        this.id = id;
+    public Long getId() {
+        return id;
     }
 
     public String getUsername() {
@@ -77,11 +86,27 @@ public class UserEntity {
         this.password = password;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getPhone() {
         return phone;
     }
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
     }
 }
